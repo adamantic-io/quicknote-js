@@ -5,7 +5,24 @@
  * Please refer to the `LICENSE` file contained in the project
  * root directory for more information.
  */
+import logger, {LogLevel} from "./logging";
 
-export type QuicknoteConfig = {
+const log = logger('QuicknoteConfig');
 
+export class QuicknoteConfig {
+
+    static init(cfgObj: any): QuicknoteConfig {
+        if (!QuicknoteConfig._instance) {
+            QuicknoteConfig._instance = new QuicknoteConfig(cfgObj);
+        }
+        return QuicknoteConfig._instance;
+    }
+
+    constructor(private cfgObj: any) {
+        if (log.isLevelEnabled(LogLevel.DEBUG)) {
+            log.debug('Configuring the Quicknote library', cfgObj);
+        }
+    }
+
+    private static _instance: QuicknoteConfig;
 }

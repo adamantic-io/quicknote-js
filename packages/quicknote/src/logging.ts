@@ -19,6 +19,18 @@ export interface LoggerFactory {
 }
 
 /**
+ * Representation of the logging levels used in the lib
+ */
+export enum LogLevel {
+    TRACE,
+    DEBUG,
+    INFO,
+    WARN,
+    ERROR,
+    SILENT,
+}
+
+/**
  * The standard logger interface used by Quicknote.
  * It is "enough" standard to be compatible with a few logging libraries.
  * Users of the Quicknote library can provide their own implementation of this
@@ -26,6 +38,7 @@ export interface LoggerFactory {
  * @see setLoggerFactory
  */
 export interface Logger {
+    isLevelEnabled(level: LogLevel): boolean;
     trace(message: string, ...args: any[]): void;
     debug(message: string, ...args: any[]): void;
     info(message: string, ...args: any[]): void;
@@ -64,7 +77,27 @@ class LoglevelSimpleLogFactory implements LoggerFactory {
     }
 
     getLogger(name: string): Logger {
-        return log.getLogger(name);
+        const _log = log.getLogger(name);
+        return {
+            isLevelEnabled(level: LogLevel): boolean {
+                return _log.getLevel() <= level;
+            },
+            trace(message: string, ...args: any[]): void {
+                _log.trace(message, ...args);
+            },
+            debug(message: string, ...args: any[]): void {
+                _log.debug(message, ...args);
+            },
+            info(message: string, ...args: any[]): void {
+                _log.info(message, ...args);
+            },
+            warn(message: string, ...args: any[]): void {
+                _log.warn(message, ...args);
+            },
+            error(message: string, ...args: any[]): void {
+                _log.error(message, ...args);
+            }
+        };
     }
 }
 
@@ -72,6 +105,6 @@ class LoglevelSimpleLogFactory implements LoggerFactory {
  * The default logger factory.
  */
 let loggerFactory: LoggerFactory = new LoglevelSimpleLogFactory(
-    { defaultLevel: log.levels.DEBUG }
+    { defaultLevel: log.levels.INFO }
 );
 
