@@ -14,9 +14,10 @@ export { Message, IDGenerator, DefaultIDGenerator } from "./message";
 import { v4 as uuidv4 } from "uuid";
 import {Receiver, Sender} from "./channel";
 import logger from "./logging";
+import {QuicknoteConfig} from "./config";
 
 
-export const quicknote = () => Quicknote.instance()
+export default quicknote = () => Quicknote.instance()
 
 /**
  * Entry point for the Quicknote library.
@@ -28,6 +29,10 @@ export class Quicknote {
             Quicknote._instance = new Quicknote();
         }
         return Quicknote._instance;
+    }
+
+    config(config: object, reload = false) {
+        QuicknoteConfig.init(config, reload);
     }
 
     async sender(name: string): Promise<Sender> {

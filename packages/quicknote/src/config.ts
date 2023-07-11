@@ -67,8 +67,11 @@ export class QuicknoteConfig {
         }
     }
 
-    private static requirePath(cfg: object, path: string[]) {
+    private static requirePath(cfg: any, path: string[]): any {
         const next = path.shift();
+        if (!next) {
+            throw new ConfigException('Path is empty.');
+        }
         if (cfg[next]) {
             if (path.length > 0) {
                 return QuicknoteConfig.requirePath(cfg[next], path);
