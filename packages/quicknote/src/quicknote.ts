@@ -6,4 +6,7 @@
  * root directory for more information.
  */
 
+export { ChannelState, Channel } from './channel';
+export { Message, IDGenerator, DefaultIDGenerator } from './message';
+
 export const quicknote = () => 'Hello from quicknote';
