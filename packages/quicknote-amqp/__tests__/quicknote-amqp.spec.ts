@@ -2,8 +2,11 @@ import { quicknoteAmqp } from '..';
 import { quicknote } from "@adamantic/quicknote";
 import assert from 'assert/strict'
 
-assert.strictEqual(quicknoteAmqp(), 'Hello from quicknote-amqp');
-console.info('quicknote-amqp tests passed');
+import logger from "@adamantic/quicknote/src/logging";
+const log = logger('quicknote-amqp.spec.ts');
 
-assert.strictEqual(quicknote(), 'Hello from quicknote');
-console.info('quicknote tests passed');
+assert.strictEqual(quicknoteAmqp(), 'Hello from quicknote-amqp');
+log.info('quicknote-amqp tests passed');
+
+assert.strictEqual(quicknote(), quicknote());
+log.info('quicknote tests passed');

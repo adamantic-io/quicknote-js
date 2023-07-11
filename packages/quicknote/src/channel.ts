@@ -9,6 +9,7 @@
 
 import {Message} from "./message";
 import {BehaviorSubject, Observer, Subscribable, Unsubscribable} from "rxjs";
+import {QuicknoteConfig} from "./config";
 
 /**
  * Simple representation of the state of a channel
@@ -91,5 +92,47 @@ export interface Receiver extends Channel, Subscribable<Message> {
      * @param routing the routing key to filter messages, if any. If not specified, all messages will be received.
      */
     subscribe(observer: Partial<Observer<Message>>, routing?: string): Unsubscribable;
+
+}
+
+
+/**
+ * Handles connection details to specific remote relays,
+ * along with policies for connection pooling, channel reuse, etc.
+ * Every Quicknote plug-in module should have its connector.
+ */
+export interface Connector extends Channel {
+
+    /**
+     * Performs the connector initialization.
+     * After this method returns, the connector is supposed to
+     * be ready to create connections.
+     * @param cfg the configuration object.
+     * @throws ConfigException if the configuration is invalid.
+     * @throws SystemException if the connector cannot be initialized.
+     */
+    initialize(cfg: QuicknoteConfig): Promise<void>;
+
+    /**
+     * Returns a sender with the given name.
+     * A connector may perform channel pooling, lazy initialization, etc.
+     * Specific policies are implementation-dependent.
+     *
+     * @param name the name of the sender to retrieve.
+     * @return the sender, ready to operate.
+     * @throws ChannelNotFound if the sender cannot be instantiated and/or is unavailable.
+     */
+    sender(name: string): Promise<Sender>;
+
+    /**
+     * Returns a receiver with the given name.
+     * A connector may perform channel pooling, lazy initialization, etc.
+     * Specific policies are implementation-dependent.
+     *
+     * @param name the name of the receiver to retrieve.
+     * @return the receiver, ready to operate.
+     * @throws ChannelNotFound if the receiver cannot be instantiated and/or is unavailable.
+     */
+    receiver(name: string): Promise<Receiver>;
 
 }

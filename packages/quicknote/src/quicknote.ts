@@ -6,7 +6,60 @@
  * root directory for more information.
  */
 
-export { ChannelState, Channel } from './channel';
-export { Message, IDGenerator, DefaultIDGenerator } from './message';
+import {NotImplemented} from "./exceptions";
 
-export const quicknote = () => 'Hello from quicknote';
+export { ChannelState, Channel } from "./channel";
+export { Message, IDGenerator, DefaultIDGenerator } from "./message";
+
+import { v4 as uuidv4 } from "uuid";
+import {Receiver, Sender} from "./channel";
+import logger from "./logging";
+
+
+export const quicknote = () => Quicknote.instance()
+
+/**
+ * Entry point for the Quicknote library.
+ */
+export class Quicknote {
+
+    static instance(): Quicknote {
+        if (!Quicknote._instance) {
+            Quicknote._instance = new Quicknote();
+        }
+        return Quicknote._instance;
+    }
+
+    async sender(name: string): Promise<Sender> {
+        throw new NotImplemented('Quicknote.sender()');
+    }
+
+    async receiver(name: string): Promise<Receiver> {
+        throw new NotImplemented('Quicknote.receiver()');
+    }
+/*
+    async connector(name: string): Promise<Connector> {
+        throw new NotImplemented('Quicknote.connector()');
+    }
+
+ */
+    get clientId(): string {
+        return this._clientId;
+    }
+
+    set clientId(value: string) {
+        this._clientId = value;
+    }
+
+
+
+    protected constructor() {
+        this.log.info('Initializing Quicknote');
+    }
+
+    private log = logger('Quicknote');
+    private _clientId = uuidv4();
+
+    private static _instance: Quicknote;
+
+}

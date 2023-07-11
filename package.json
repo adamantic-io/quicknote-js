@@ -10,6 +10,9 @@
     "typescript": "^5.1.6"
   },
   "dependencies": {
-    "rxjs": "^7.8.1"
+    "@types/uuid": "^9.0.2",
+    "loglevel": "^1.8.1",
+    "rxjs": "^7.8.1",
+    "uuid": "^9.0.0"
   }
 }
