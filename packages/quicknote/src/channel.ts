@@ -8,6 +8,7 @@
 
 
 import {Message} from "./message";
+import {BehaviorSubject, Observer, Subscribable, Unsubscribable} from "rxjs";
 
 /**
  * Simple representation of the state of a channel
@@ -48,9 +49,47 @@ export interface Channel {
 
     /**
      * Opens the channel for sending or receiving messages.
-     * @throws IOException if the channel cannot be opened.
+     * @throws `IOException` if the channel cannot be opened.
      */
-    open(): void;
-    close(): void;
-    send(m: Message): void;
+    open(): Promise<void>;
+
+    /**
+     * Closes the channel.
+     * It is a requirement that this method be idempotent and not throw any exceptions.
+     */
+    close(): Promise<void>;
+
+    /**
+     * The state of the channel.
+     */
+    state$: BehaviorSubject<ChannelState>;
+}
+
+
+/**
+ * Represents a channel to send messages to a remote destination.
+ */
+export interface Sender extends Channel {
+
+    /**
+     * Sends a message through the channel to a remote destination.
+     * @param message the message to send
+     * @throws `IOException` if the message cannot be sent
+     */
+    send(message: Message): Promise<void>;
+}
+
+/**
+ * Represents a channel to receive messages from a remote source.
+ * Using the RXJS library.
+ */
+export interface Receiver extends Channel, Subscribable<Message> {
+
+    /**
+     * Creates a new subscription for incoming messages over a specific routing key (optional).
+     * @param observer the observer that will receive the messages.
+     * @param routing the routing key to filter messages, if any. If not specified, all messages will be received.
+     */
+    subscribe(observer: Partial<Observer<Message>>, routing?: string): Unsubscribable;
+
 }

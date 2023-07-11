@@ -37,6 +37,11 @@ export enum ExceptionCode {
      * Message time-to-live expired
      */
     MSG_TTLEXP = 'MSG_TTLEXP',
+
+    /**
+     * Exception in the underlying I/O layer
+     */
+    XIO_EXCEPTION = 'XIO_EXCEPTION',
 }
 
 /**
@@ -157,4 +162,20 @@ export class TimeToLiveExpired extends SystemException {
         super(ExceptionCode.MSG_TTLEXP, `Message ${m.id} has expired its time-to-live`);
     }
 
+}
+
+
+/**
+ * Exception thrown when an I/O error occurs.
+ */
+export class IOException extends SystemException {
+
+    /**
+     * Constructor specifying the message and cause of the exception.
+     * @param message The exception message (standard in the JS world)
+     * @param cause The cause of the exception, if any.
+     */
+    constructor(message?: string, cause?: Error) {
+        super(ExceptionCode.XIO_EXCEPTION, message, cause);
+    }
 }
