@@ -17,8 +17,6 @@ import logger from "./logging";
 import {QuicknoteConfig} from "./config";
 
 
-export default quicknote = () => Quicknote.instance()
-
 /**
  * Entry point for the Quicknote library.
  */
@@ -31,8 +29,8 @@ export class Quicknote {
         return Quicknote._instance;
     }
 
-    config(config: object, reload = false) {
-        QuicknoteConfig.init(config, reload);
+    config(config: object, vars: {[key:string]:string} = {}, reload = false) {
+        QuicknoteConfig.init(config, vars, reload);
     }
 
     async sender(name: string): Promise<Sender> {
@@ -68,3 +66,6 @@ export class Quicknote {
     private static _instance: Quicknote;
 
 }
+
+const quicknote = () => Quicknote.instance()
+export default quicknote;

@@ -21,11 +21,12 @@ export class QuicknoteConfig {
      * @param cfgObj the configuration object - how this is sourced depends on the
      *               environment in which the library is used (might be a config stored
      *               as JSON in a file, or a YAML, or a response from a web service)
+     * @param vars a map of variables used in the configuration.
      * @param reload if true, the configuration is reloaded even if it was already loaded.
      */
-    static init(cfgObj: object, reload = false): QuicknoteConfig {
+    static init(cfgObj: object, vars: {[key: string]: string} = {}, reload = false): QuicknoteConfig {
         if (!QuicknoteConfig._instance || reload) {
-            QuicknoteConfig._instance = new QuicknoteConfig(cfgObj);
+            QuicknoteConfig._instance = new QuicknoteConfig(cfgObj, vars);
         }
         return QuicknoteConfig._instance;
     }
@@ -61,10 +62,14 @@ export class QuicknoteConfig {
     }
 
 
-    protected constructor(private cfgObj: any) {
+    protected constructor(
+        cfgObj: any,
+        private vars: {[key: string]: string} = {})
+    {
         if (log.isLevelEnabled(LogLevel.DEBUG)) {
             log.debug('Configuring the Quicknote library', cfgObj);
         }
+        this.cfgObj = this._interpolator.interpolate(cfgObj, vars);
     }
 
     private static requirePath(cfg: any, path: string[]): any {
@@ -82,4 +87,39 @@ export class QuicknoteConfig {
     }
 
     private static _instance: QuicknoteConfig;
+
+    private readonly cfgObj: any;
+    private _interpolator: VariableInterpolator = new VariableInterpolator();
+}
+
+
+export class VariableInterpolator {
+    interpolate(obj: any, vars: {[key: string]: string}): any {
+        return this.interpolateObject(obj, vars);
+    }
+
+    protected interpolateObject(obj: any, vars: {[key: string]: string}): any {
+        if (typeof obj === 'string') {
+            return this.interpolateString(obj, vars);
+        }
+        if (Array.isArray(obj)) {
+            return obj.map((item) => this.interpolateObject(item, vars));
+        }
+        if (typeof obj === 'object') {
+            const result: any = {};
+            for (const key in obj) {
+                if (obj.hasOwnProperty(key)) {
+                    result[key] = this.interpolateObject(obj[key], vars);
+                }
+            }
+            return result;
+        }
+        return obj;
+    }
+
+    protected interpolateString(str: string, vars: {[key: string]: string}): string {
+        return str.replace(/\${(.*?)}/g, (match, name) => {
+            return vars[name] || match;
+        });
+    }
 }

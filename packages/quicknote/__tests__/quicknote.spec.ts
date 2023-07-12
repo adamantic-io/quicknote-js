@@ -1,9 +1,12 @@
-import { quicknote } from '..';
-import assert from 'assert/strict'
-import logger from "../src/logging";
-import {QuicknoteConfig} from "../src/config";
+import quicknote from '..';
 
-const log = logger('quicknote-amqp.spec.ts');
-QuicknoteConfig.init({ amqp: { url: 'amqp://localhost' } });
-assert.strictEqual(quicknote(), quicknote());
-log.info('quicknote tests passed');
+describe('Quicknote', () => {
+
+    // jest test to check that the Quicknote singleton is instantiated correctly
+    test('Quicknote singleton', () => {
+        const q1 = quicknote();
+        const q2 = quicknote();
+        expect(q1).toBe(q2);
+    });
+
+});
