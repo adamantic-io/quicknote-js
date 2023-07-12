@@ -92,8 +92,17 @@ export class QuicknoteConfig {
     private _interpolator: VariableInterpolator = new VariableInterpolator();
 }
 
-
+/**
+ * A simple variable interpolator.
+ * It replaces all occurrences of `${varName}` with the value of `varName` in the `vars` map.
+ * If the variable is not found, the original string is left untouched.
+ */
 export class VariableInterpolator {
+    /**
+     * Interpolates the variables in the given object.
+     * @param obj the object to interpolate - may be a string, an array or an object.
+     * @param vars the map of variables to use for interpolation.
+     */
     interpolate(obj: any, vars: {[key: string]: string}): any {
         return this.interpolateObject(obj, vars);
     }
