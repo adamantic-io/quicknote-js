@@ -91,14 +91,54 @@ describe('QuicknoteConfig', () => {
     // check that the connector config is loaded correctly and interpolated
     test('QuicknoteConfig connector', () => {
         const q = QuicknoteConfig.init({
-            'connectors': {
-                'foo': {
-                    'type': 'amqp',
-                    'url': 'amqp://${foo}'
+            'quicknote': {
+                'connectors': {
+                    'foo': {
+                        'type': 'amqp',
+                        'url': 'amqp://${foo}'
+                    }
                 }
             }
         }, {'foo': 'bar'}, false);
         const config = q.configForConnector('foo');
+        expect(config).toEqual({
+            'type': 'amqp',
+            'url': 'amqp://bar'
+        });
+    });
+
+    // check that the sender config is loaded correctly and interpolated
+    test('QuicknoteConfig sender', () => {
+        const q = QuicknoteConfig.init({
+            'quicknote': {
+                'senders': {
+                    'foo': {
+                        'type': 'amqp',
+                        'url': 'amqp://${foo}'
+                    }
+                }
+            }
+        }, {'foo': 'bar'}, false);
+        const config = q.configForSender('foo');
+        expect(config).toEqual({
+            'type': 'amqp',
+            'url': 'amqp://bar'
+        });
+    });
+
+    // check that the receiver config is loaded correctly and interpolated
+    test('QuicknoteConfig receiver', () => {
+        const q = QuicknoteConfig.init({
+            'quicknote': {
+                'receivers': {
+                    'foo': {
+                        'type': 'amqp',
+                        'url': 'amqp://${foo}'
+                    }
+                }
+            }
+        }, {'foo': 'bar'}, false);
+        const config = q.configForReceiver('foo');
         expect(config).toEqual({
             'type': 'amqp',
             'url': 'amqp://bar'

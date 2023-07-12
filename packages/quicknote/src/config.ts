@@ -38,7 +38,7 @@ export class QuicknoteConfig {
      * @throws ConfigException if the configuration for the connector is not found.
      */
     configForConnector(name: string): object {
-        return QuicknoteConfig.requirePath(this.cfgObj, ['connectors', name]);
+        return QuicknoteConfig.requirePath(this.cfgObj, ['quicknote', 'connectors', name]);
     }
 
     /**
@@ -48,7 +48,7 @@ export class QuicknoteConfig {
      * @throws ConfigException if the configuration for the sender is not found.
      */
     configForSender(name: string): object {
-        return QuicknoteConfig.requirePath(this.cfgObj, ['senders', name]);
+        return QuicknoteConfig.requirePath(this.cfgObj, ['quicknote', 'senders', name]);
     }
 
     /**
@@ -58,7 +58,7 @@ export class QuicknoteConfig {
      * @throws ConfigException if the configuration for the receiver is not found.
      */
     configForReceiver(name: string): object {
-        return QuicknoteConfig.requirePath(this.cfgObj, ['receivers', name]);
+        return QuicknoteConfig.requirePath(this.cfgObj, ['quicknote', 'receivers', name]);
     }
 
 
