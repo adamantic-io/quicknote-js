@@ -4,7 +4,7 @@
       "wsstomptest": {
         "module": "@adamantic/quicknote-wsstomp",
         "type": "wsstomp",
-        "url": "ws://localhost:61614",
+        "url": "ws://127.0.0.1:15674/ws",
         "username": "guest",
         "password": "guest"
       }

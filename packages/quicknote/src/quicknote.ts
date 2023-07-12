@@ -51,6 +51,7 @@ export class Quicknote {
         var cnn = this._connectors[name];
         if (!cnn) {
             cnn = await loadConnector(name);
+            await cnn.open();
             this._connectors[name] = cnn;
         }
         return cnn;

@@ -3,10 +3,17 @@
 import {Channel, ChannelState, Connector, Message, QuicknoteConfig, Receiver, Sender} from '@adamantic/quicknote';
 import logger from "@adamantic/quicknote/lib/logging";
 import {BehaviorSubject, Observer, Unsubscribable} from "rxjs";
-import {NotImplemented} from "@adamantic/quicknote/lib/exceptions";
 import {Client as StompClient, Message as StompMessage} from "@stomp/stompjs";
+import {ChannelException} from "@adamantic/quicknote/lib/exceptions";
 
 const log = logger('quicknote-wsstomp');
+
+try {
+    const WebSocket = require('ws');
+    global.WebSocket = WebSocket;
+} catch (e) {
+    log.info("ws not available - we're possibly in the browser");
+}
 
 
 export async function connector(name: string, cfg: QuicknoteConfig): Promise<Connector> {
@@ -85,9 +92,24 @@ class WsstompConnector implements Connector {
         }
         this.stompClient.onStompError = (frame) => {
             log.error(`WS-STOMP connector [${this.name()}] error.`, frame);
+            this._lastError = frame;
             this.state$.next(ChannelState.ERROR);
         }
-        this.stompClient.activate();
+        this.stompClient.onWebSocketError = (evt) => {
+            log.error(`WS-STOMP connector [${this.name()}] websocket error.`, evt);
+            this._lastError = evt;
+            this.state$.next(ChannelState.ERROR);
+        }
+        return new Promise<void>((resolve, reject) => {
+            this.state$.subscribe((state) => {
+                if (state === ChannelState.OPEN) {
+                    resolve();
+                } else if (state === ChannelState.ERROR) {
+                    reject(this.lastError() || `Error opening WS-STOMP connector [${this.name()}]`);
+                }
+            });
+            this.stompClient!.activate();
+        });
     }
 
     async receiver(name: string): Promise<Receiver> {
@@ -99,7 +121,7 @@ class WsstompConnector implements Connector {
             await this.receivers[name].close();
         }
         const recv = new WsStompReceiver(name, this.stompClient!, this._cfg!);
-        //rect.open();
+        await recv.open();
         this.receivers[name] = recv;
         return recv;
     }
@@ -132,12 +154,16 @@ class WsstompConnector implements Connector {
             await this.senders[name].close();
         }
         const send = new WsStompSender(name, this.stompClient!, this._cfg!);
-        //send.open();
+        await send.open();
         this.senders[name] = send;
         return send;
     }
     name(): string {
         return this.name_;
+    }
+
+    lastError(): any {
+        return this._lastError;
     }
 
     getOrFail(key: string, map: any): any {
@@ -149,6 +175,7 @@ class WsstompConnector implements Connector {
 
     private _cfg?: QuicknoteConfig;
     private _ws: any;
+    private _lastError?: any;
     private properties: {[key: string]: any } = {};
     private senders: { [key: string]: Sender } = {};
     private receivers: { [key: string]: Receiver } = {};
@@ -200,6 +227,7 @@ class WsStompSender extends WsStompBaseChannel implements Sender {
     }
 
     async send(message: Message) {
+        log.debug(`Sending message to WS-STOMP sender [${this.name()}]`);
         this._stompClient.publish({
             destination: this._destination,
             binaryBody: message.payload,
