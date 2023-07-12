@@ -9,6 +9,8 @@
     "incremental": true,          /* Enable incremental compilation */
     "module": "commonjs",         /* Specify module code generation */
     "moduleResolution": "node",   /* Specify module resolution strategy */
+    "noImplicitAny": false,       /* Raise error on expressions and declarations with an implied 'any' type. */
+    "resolveJsonModule": true,    /* Include modules imported with '.json' extension */
     "skipLibCheck": false,        /* Skip type checking of declaration files. */
     "sourceMap": true,            /* Generates corresponding '.map' file */
     "strict": true,               /* Enable all strict type-checking options */

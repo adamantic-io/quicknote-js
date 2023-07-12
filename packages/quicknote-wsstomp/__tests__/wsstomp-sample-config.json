@@ -1,0 +1,25 @@
+{
+  "quicknote": {
+    "connectors": {
+      "wsstomptest": {
+        "module": "@adamantic/quicknote-wsstomp",
+        "type": "wsstomp",
+        "url": "ws://localhost:61614",
+        "username": "guest",
+        "password": "guest"
+      }
+    },
+    "senders": {
+      "wsstomptestsender": {
+        "connector": "wsstomptest",
+        "dest": "/topic/quicknote"
+      }
+    },
+    "receivers": {
+      "wsstomptestreceiver": {
+        "connector": "wsstomptest",
+        "dest": "/topic/quicknote"
+      }
+    }
+  }
+}

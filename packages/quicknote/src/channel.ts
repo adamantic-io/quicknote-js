@@ -10,6 +10,7 @@
 import {Message} from "./message";
 import {BehaviorSubject, Observer, Subscribable, Unsubscribable} from "rxjs";
 import {QuicknoteConfig} from "./config";
+import log from "loglevel";
 
 /**
  * Simple representation of the state of a channel
@@ -135,4 +136,23 @@ export interface Connector extends Channel {
      */
     receiver(name: string): Promise<Receiver>;
 
+}
+
+
+export async function loadConnector(name: string): Promise<Connector> {
+    log.info(`Loading connector ${name}`);
+    const cfg = QuicknoteConfig.instance().configForConnector(name);
+    const moduleName = moduleNameForConnector(name, cfg);
+    // check if module is available
+    const module = await import(moduleName);
+    return module.connector(name, QuicknoteConfig.instance());
+}
+
+const moduleNameForConnector = (name: string, cfg: any): string => {
+    let moduleName = cfg['module'];
+    if (!moduleName) {
+        moduleName = '@adamantic/quicknote-' + name;
+        log.info('No module specified for connector, using default: ' + moduleName);
+    }
+    return moduleName;
 }

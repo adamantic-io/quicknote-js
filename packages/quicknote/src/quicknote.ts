@@ -6,13 +6,14 @@
  * root directory for more information.
  */
 
-import {NotImplemented} from "./exceptions";
+import {ConfigException, NotImplemented} from "./exceptions";
 
-export { ChannelState, Channel } from "./channel";
+export { QuicknoteConfig } from "./config";
+export { ChannelState, Channel, Sender, Receiver, Connector } from "./channel";
 export { Message, IDGenerator, DefaultIDGenerator } from "./message";
 
-import { v4 as uuidv4 } from "uuid";
-import {Receiver, Sender} from "./channel";
+import { v4 as uuidV4 } from "uuid";
+import {Connector, loadConnector, Receiver, Sender} from "./channel";
 import logger from "./logging";
 import {QuicknoteConfig} from "./config";
 
@@ -29,23 +30,32 @@ export class Quicknote {
         return Quicknote._instance;
     }
 
-    config(config: object, vars: {[key:string]:string} = {}, reload = false) {
-        QuicknoteConfig.init(config, vars, reload);
+    config(config: object, vars: {[key:string]:string} = {}, reload = false): QuicknoteConfig {
+        this._cfg = QuicknoteConfig.init(config, vars, reload);
+        return this._cfg;
     }
 
     async sender(name: string): Promise<Sender> {
-        throw new NotImplemented('Quicknote.sender()');
+        const c = this.cfg().configForSender(name);
+        const cnn = await this.connector(c['connector']);
+        return cnn.sender(name);
     }
 
     async receiver(name: string): Promise<Receiver> {
-        throw new NotImplemented('Quicknote.receiver()');
-    }
-/*
-    async connector(name: string): Promise<Connector> {
-        throw new NotImplemented('Quicknote.connector()');
+        const c = this.cfg().configForReceiver(name);
+        const cnn = await this.connector(c['connector']);
+        return cnn.receiver(name);
     }
 
- */
+    async connector(name: string): Promise<Connector> {
+        var cnn = this._connectors[name];
+        if (!cnn) {
+            cnn = await loadConnector(name);
+            this._connectors[name] = cnn;
+        }
+        return cnn;
+    }
+
     get clientId(): string {
         return this._clientId;
     }
@@ -54,14 +64,23 @@ export class Quicknote {
         this._clientId = value;
     }
 
-
-
-    protected constructor() {
-        this.log.info('Initializing Quicknote');
+    private cfg(): QuicknoteConfig {
+        if (!this._cfg) {
+            throw new ConfigException('Quicknote not initialized. Call Quicknote.config() first.');
+        }
+        return this._cfg;
     }
 
-    private log = logger('Quicknote');
-    private _clientId = uuidv4();
+    protected constructor() {
+        this._log.info('Initializing Quicknote');
+    }
+
+    private _log = logger('Quicknote');
+    private _clientId = uuidV4();
+    private _connectors: {[name: string]: Connector} = {};
+    private _cfg?: QuicknoteConfig;
+
+
 
     private static _instance: Quicknote;
 

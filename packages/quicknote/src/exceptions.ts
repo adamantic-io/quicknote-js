@@ -29,6 +29,11 @@ export enum ExceptionCode {
     FTR_NOTIMPL = 'FTR_NOTIMPL',
 
     /**
+     * Channel error
+     */
+    CHN_EXCEPTION = 'CHN_ERROR',
+
+    /**
      * Channel not found
      */
     CHN_NOTFOUND = 'CHN_NOTFOUND',
@@ -89,11 +94,27 @@ export class SystemException extends QuicknoteException {
     /* Inherit everything from parent */
 }
 
+/**
+ * Exception throws when a generic error is detected in a channel.
+ */
+export class ChannelException extends SystemException {
+    /**
+     * Creates a new channel exception with the given name, message and cause.
+     * @param name The name of the channel that caused the exception
+     * @param message The exception message (standard in the JS world)
+     * @param cause The cause of the exception, if any.
+     */
+    constructor(public readonly name: string,
+                message?: string,
+                cause?: Error) {
+        super(ExceptionCode.CHN_EXCEPTION, message, cause);
+    }
+}
 
 /**
  * Exception thrown when a channel is not found.
  */
-export class ChannelNotFound extends BusinessException {
+export class ChannelNotFound extends ChannelException {
 
     /**
      * Constructor specifying the name of the channel that was not found.
@@ -102,7 +123,7 @@ export class ChannelNotFound extends BusinessException {
      * @param cause The cause of the exception, if any.
      */
     constructor(
-        public readonly name: string,
+        name: string,
         message?: string,
         cause?: Error)
     {

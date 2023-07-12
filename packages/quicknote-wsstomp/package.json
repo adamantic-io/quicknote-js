@@ -1,17 +1,17 @@
 {
-  "name": "@adamantic/quicknote-amqp",
+  "name": "@adamantic/quicknote-wsstomp",
   "version": "0.0.1",
-  "description": "AMQP connector for the Quicknote library",
+  "description": "STOMP-over-Websocket connector for the Quicknote library",
   "keywords": [
     "quicknote",
-    "amqp",
-    "rabbitmq"
+    "websocket",
+    "stomp"
   ],
   "author": "Domenico Barra <domenico@adamantic.io>",
   "homepage": "",
   "license": "LGPL-3.0-only",
-  "main": "lib/quicknote-amqp.js",
-  "types": "lib/quicknote-amqp.d.ts",
+  "main": "lib/quicknote-wsstomp.js",
+  "types": "lib/quicknote-wsstomp.d.ts",
   "directories": {
     "lib": "lib",
     "test": "__tests__"
@@ -25,13 +25,13 @@
   "scripts": {
     "build": "tsc",
     "clean": "npx -y rimraf ./lib",
-    "test": "ts-node ./__tests__/quicknote-amqp.spec.ts"
+    "test": "ts-node __tests__/quicknote-wsstomp.spec.ts"
   },
   "dependencies": {
     "@adamantic/quicknote": "^0.0.1",
-    "amqplib": "^0.10.3"
+    "@stomp/stompjs": "^7.0.0"
   },
-  "devDependencies": {
-    "@types/amqplib": "^0.10.1"
+  "optionalDependencies": {
+    "ws": "^8.13.0"
   }
 }

@@ -16,6 +16,18 @@ const log = logger('QuicknoteConfig');
 export class QuicknoteConfig {
 
     /**
+     * The singleton instance of the configuration.
+     * @throws `ConfigException` if the configuration has not been initialized.
+     * @see QuicknoteConfig.init()
+     */
+    static instance(): QuicknoteConfig {
+        if (!QuicknoteConfig._instance) {
+            throw new ConfigException('Quicknote config not initialized');
+        }
+        return QuicknoteConfig._instance;
+    }
+
+    /**
      * Performs a one-time initialization of the Quicknote library.
      *
      * @param cfgObj the configuration object - how this is sourced depends on the
