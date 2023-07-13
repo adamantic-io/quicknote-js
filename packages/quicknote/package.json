@@ -1,6 +1,6 @@
 {
   "name": "@adamantic/quicknote",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Quicknote library implementation for Typescript and Javascript",
   "keywords": [
     "notification",
@@ -27,5 +27,10 @@
     "build": "tsc",
     "clean": "npx -y rimraf ./lib",
     "test": "ts-node ./__tests__/quicknote.spec.ts"
+  },
+  "dependencies": {
+    "loglevel": "^1.8.1",
+    "rxjs": "^7.8.1",
+    "uuid": "^9.0.0"
   }
 }

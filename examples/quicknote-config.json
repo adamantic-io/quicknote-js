@@ -7,11 +7,14 @@
         "dest": "${QUICKNOTE_SENDERS_TESTSENDER_DEST}",
         "durable": "${QUICKNOTE_SENDERS_TESTSENDER_DURABLE}"
       },
-      "wsstomptestsender": {
+      "topic_quicknote": {
         "connector": "wsstomptest",
         "dest": "/topic/quicknote"
+      },
+      "queue_quicknote": {
+        "connector": "wsstomptest",
+        "dest": "/queue/quicknote"
       }
-
     },
     "receivers": {
       "amqptestreceiver": {
@@ -20,9 +23,13 @@
         "dest": "${QUICKNOTE_RECEIVERS_TESTRECEIVER_DEST}",
         "durable": "${QUICKNOTE_RECEIVERS_TESTRECEIVER_DURABLE}"
       },
-      "wsstomptestreceiver": {
+      "topic_quicknote": {
         "connector": "wsstomptest",
         "dest": "/topic/quicknote"
+      },
+      "queue_quicknote": {
+        "connector": "wsstomptest",
+        "dest": "/queue/quicknote"
       }
     },
     "connectors": {

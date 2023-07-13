@@ -1,6 +1,6 @@
 {
   "name": "@adamantic/quicknote-amqp",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "AMQP connector for the Quicknote library",
   "keywords": [
     "quicknote",
@@ -28,7 +28,7 @@
     "test": "ts-node ./__tests__/quicknote-amqp.spec.ts"
   },
   "dependencies": {
-    "@adamantic/quicknote": "^0.0.1",
+    "@adamantic/quicknote": "^0.0.2",
     "amqplib": "^0.10.3"
   },
   "devDependencies": {
