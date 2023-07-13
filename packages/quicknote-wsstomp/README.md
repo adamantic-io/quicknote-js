@@ -1,11 +1,7 @@
 # `@adamantic/quicknote-wsstomp`
-
-> TODO: description
+STOMP over WebSockets connector plug-in for the Quicknote library.
 
 ## Usage
-
-```
-const quicknoteWsStomp = require('@adamantic/quicknote-wsstomp');
-
-// TODO: DEMONSTRATE API
-```
+This connector is not intended for direct usage. Please
+refer to the documentation for the Quicknote library for
+examples of how to use connector plug-ins.
