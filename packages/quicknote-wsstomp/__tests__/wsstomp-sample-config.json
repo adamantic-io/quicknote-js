@@ -12,13 +12,13 @@
     "senders": {
       "wsstomptestsender": {
         "connector": "wsstomptest",
-        "dest": "/topic/quicknote"
+        "dest": "/topic/qn.users"
       }
     },
     "receivers": {
       "wsstomptestreceiver": {
         "connector": "wsstomptest",
-        "dest": "/topic/quicknote"
+        "dest": "/topic/qn.users"
       }
     }
   }

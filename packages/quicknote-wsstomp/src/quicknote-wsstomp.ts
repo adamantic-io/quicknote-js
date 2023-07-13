@@ -4,7 +4,6 @@ import {Channel, ChannelState, Connector, Message, QuicknoteConfig, Receiver, Se
 import logger, {LogLevel} from "@adamantic/quicknote/lib/logging";
 import {BehaviorSubject, Observer, Unsubscribable} from "rxjs";
 import {Client as StompClient, Message as StompMessage, StompSubscription} from "@stomp/stompjs";
-import {ChannelException} from "@adamantic/quicknote/lib/exceptions";
 
 const log = logger('quicknote-wsstomp');
 
@@ -235,10 +234,14 @@ class WsStompSender extends WsStompBaseChannel implements Sender {
 
     async send(message: Message) {
         log.debug(`Sending message to WS-STOMP sender [${this.name()}]`);
+        const destination = message.routing ? this._destination + message.routing : this._destination;
         this._stompClient.publish({
-            destination: this._destination,
+            destination,
             binaryBody: message.payload,
-            headers: message.headers,
+            headers: {
+                ...message.headers,
+                routing_key: message.routing || '',
+            },
         });
     }
 }

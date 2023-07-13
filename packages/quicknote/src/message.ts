@@ -45,7 +45,7 @@ export class Message {
     /**
      * Default routing key for messages
      */
-    static readonly DEFAULT_ROUTING = '/';
+    static readonly DEFAULT_ROUTING = '';
 
     /**
      * Default content type for messages

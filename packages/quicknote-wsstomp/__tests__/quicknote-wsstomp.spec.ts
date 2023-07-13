@@ -1,5 +1,5 @@
 import logger from "@adamantic/quicknote/lib/logging";
-import {Message, Quicknote} from "@adamantic/quicknote";
+import quicknote, {Message, Quicknote} from "@adamantic/quicknote";
 
 const log = logger('quicknote-wsstomp.spec');
 
@@ -44,7 +44,8 @@ describe('quicknote-wsstomp',  () => {
     });
 
     test('should be able to send and receive a message', async () => {
-       const cfgFile = await import('./wsstomp-sample-config.json');
+       // @ts-ignore
+        const cfgFile = await import('./wsstomp-sample-config.json');
          const qn = Quicknote.instance();
             const cfg = await qn.config(cfgFile);
             const sender = await qn.sender('wsstomptestsender');
@@ -53,29 +54,31 @@ describe('quicknote-wsstomp',  () => {
 
                 const p = new Promise<void> ( (resolve, reject) => {
                     // @ts-ignore
-                    receiver.subscribe((msg: Message) => {
-                        log.debug('Received message: %s', msg.payload);
+                    receiver.subscribe({ next: (msg: Message) => {
+                        log.info('Received message', msg);
                         resolve();
-                    });
+                    }});
                     setTimeout(reject, 5000);
                 });
 
 
-                const msg = await sender.send({
-                    payload: Buffer.from('hello world'),
-                    contentType: 'text/plain',
-                    routing: '',
-                    ttl: 1000,
-                    id: 1,
-                    headers: {
-                        'my-header': 'my-value'
-                    }
-                });
+                const msg = await sender.send(
+                    new Message(
+                        {
+                            payloadAsString: 'hello world',
+                            contentType: 'text/plain',
+                            routing: '',
+                            ttl: 1000,
+                            id: 1,
+                            headers: {
+                                'my-header': 'my-value'
+                            }
+                        }));
+
                 // expect that p resolves
                 await p;
             } finally {
-                await sender.close();
-                await receiver.close();
+                await quicknote().close();
             }
     });
 });
