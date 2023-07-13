@@ -1,9 +1,9 @@
 // instantiate websocket client from the 'ws' library or from the browser depending on the environment.
 
 import {Channel, ChannelState, Connector, Message, QuicknoteConfig, Receiver, Sender} from '@adamantic/quicknote';
-import logger from "@adamantic/quicknote/lib/logging";
+import logger, {LogLevel} from "@adamantic/quicknote/lib/logging";
 import {BehaviorSubject, Observer, Unsubscribable} from "rxjs";
-import {Client as StompClient, Message as StompMessage} from "@stomp/stompjs";
+import {Client as StompClient, Message as StompMessage, StompSubscription} from "@stomp/stompjs";
 import {ChannelException} from "@adamantic/quicknote/lib/exceptions";
 
 const log = logger('quicknote-wsstomp');
@@ -84,6 +84,7 @@ class WsstompConnector implements Connector {
             // this also occurs when reconnecting, so we have to close all senders and receivers
             // and re-open them.
             await this.closeAllSendersAndReceivers();
+            // TODO: handle reopening of senders and receivers
             this.state$.next(ChannelState.OPEN);
         }
         this.stompClient.onDisconnect = (frame) => {
@@ -221,9 +222,15 @@ class WsStompSender extends WsStompBaseChannel implements Sender {
 
     async open(): Promise<void> {
         log.debug(`Opening WS-STOMP sender [${this.name()}] - currently a NOOP`);
+        if (this.state$.value !== ChannelState.OPEN) {
+            this.state$.next(ChannelState.OPEN)
+        }
     }
     async close(): Promise<void> {
         log.debug(`Closing WS-STOMP sender [${this.name()}] - currently a NOOP`);
+        if (this.state$.value !== ChannelState.CLOSED) {
+            this.state$.next(ChannelState.CLOSED)
+        }
     }
 
     async send(message: Message) {
@@ -237,6 +244,9 @@ class WsStompSender extends WsStompBaseChannel implements Sender {
 }
 
 class WsStompReceiver extends WsStompBaseChannel implements Receiver {
+
+    private stompSubs: StompSubscription[] = [];
+
     protected locateOwnConfig(): any {
         return this._config.configForReceiver(this.name());
     }
@@ -245,17 +255,69 @@ class WsStompReceiver extends WsStompBaseChannel implements Receiver {
         const destination = routing ? this._destination + routing : this._destination;
         const sub = this._stompClient.subscribe(this._destination, (message: StompMessage) => {
 
+            if (log.isLevelEnabled(LogLevel.TRACE)) {
+                log.trace(`Received message on WS-STOMP receiver [${this.name()}]`, message);
+            }
+            if (observer.next) { // pushing to observer via event loop
+                setImmediate(() => observer.next!(this.stompToQuicknoteMessage(message, { routing })));
+            }
         });
         log.info(`Subscribed to [${destination}] on WS-STOMP receiver [${this.name()}] with id [${sub.id}]`);
+        this.stompSubs.push(sub);
         return sub;
     }
 
 
+    stompToQuicknoteMessage(message: StompMessage, additionalProps: object = {}): Message {
+        const strid = message.headers['amqp-message-id'] || message.headers['message_id']
+            || message.headers['message-id'] || message.headers['id'];
+        let id = 0;
+        if (strid !== undefined) {
+            id = parseInt(strid, 10);
+            if (isNaN(id)) {
+                id = Message.nextId();
+            }
+        }
+        const contentType = message.headers['content-type'] || Message.DEFAULT_CONTENT_TYPE;
+
+        const msg = {
+            headers: message.headers,
+            payload: message.binaryBody,
+        };
+
+        const initProps = {
+            ...additionalProps,
+            id,
+            contentType,
+            payload: message.binaryBody,
+            headers: message.headers,
+        }
+        if (message.headers['routing_key']) {
+            initProps['routing'] = message.headers['routing_key'];
+        }
+        return new Message(initProps);
+    }
+
     async open(): Promise<void> {
         log.debug(`Opening WS-STOMP receiver [${this.name()}] - currently a NOOP`);
+        if (this.state$.value !== ChannelState.OPEN) {
+            this.state$.next(ChannelState.OPEN)
+        }
     }
     async close(): Promise<void> {
-        log.debug(`Closing WS-STOMP receiver [${this.name()}] - currently a NOOP`);
+        log.debug("Closing all subscriptions on WS-STOMP receiver [${this.name()}]");
+        for (let sub of this.stompSubs) {
+            log.debug(`Unsubscribing from [${sub.id}] on WS-STOMP receiver [${this.name()}]`);
+            try { sub.unsubscribe(); }
+            catch (err) {
+                log.warn(`Error unsubscribing from [${sub.id}] on WS-STOMP receiver [${this.name()}]`, err);
+            }
+        }
+        this.stompSubs = [];
+        log.info(`Closing WS-STOMP receiver [${this.name()}]`);
+        if (this.state$.value !== ChannelState.CLOSED) {
+            this.state$.next(ChannelState.CLOSED)
+        }
     }
 
 }

@@ -65,6 +65,16 @@ export class Quicknote {
         this._clientId = value;
     }
 
+    async close() {
+        this._log.warn('Quicknote is shutting down...');
+        for (const cnn of Object.values(this._connectors)) {
+            try { await cnn.close(); }
+            catch (e) { this._log.error(`Error while closing connector ${cnn.name()}.`, e); }
+        }
+        this._connectors = {};
+        Quicknote._instance = undefined;
+        this._log.info('Quicknote shutdown complete.');
+    }
     private cfg(): QuicknoteConfig {
         if (!this._cfg) {
             throw new ConfigException('Quicknote not initialized. Call Quicknote.config() first.');
@@ -83,7 +93,7 @@ export class Quicknote {
 
 
 
-    private static _instance: Quicknote;
+    private static _instance?: Quicknote;
 
 }
 

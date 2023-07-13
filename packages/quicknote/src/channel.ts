@@ -151,8 +151,14 @@ export async function loadConnector(name: string): Promise<Connector> {
 const moduleNameForConnector = (name: string, cfg: any): string => {
     let moduleName = cfg['module'];
     if (!moduleName) {
-        moduleName = '@adamantic/quicknote-' + name;
-        log.info('No module specified for connector, using default: ' + moduleName);
+        log.debug(`No 'module' specified for connector [${name}], trying 'type'`);
+        let connType = cfg['type'];
+        if (!connType) {
+            log.debug(`No 'type' specified for connector [${name}], using default`);
+            connType = name;
+        }
+        moduleName = '@adamantic/quicknote-' + connType;
+        log.info(`Deduced module name for connector [${name}]: ${moduleName}`);
     }
     return moduleName;
 }

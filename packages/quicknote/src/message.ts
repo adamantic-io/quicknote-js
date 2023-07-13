@@ -45,35 +45,37 @@ export class Message {
     /**
      * Default routing key for messages
      */
-    static DEFAULT_ROUTING = '/';
+    static readonly DEFAULT_ROUTING = '/';
 
     /**
      * Default content type for messages
      */
-    static DEFAULT_CONTENT_TYPE = 'text/plain';
+    static readonly DEFAULT_CONTENT_TYPE = 'text/plain';
 
     /**
      * Default headers for messages
      */
-    static DEFAULT_HEADERS = { };
+    static readonly DEFAULT_HEADERS = { };
 
     /**
      * Default payload for messages
      */
-    static DEFAULT_PAYLOAD = Uint8Array.from([]);
+    static readonly DEFAULT_PAYLOAD = Uint8Array.from([]);
 
     /**
      * Default time to live for messages
      */
-    static DEFAULT_TTL = 16;
+    static readonly DEFAULT_TTL = 16;
 
-    static DEFAULT_ID_GENERATOR: IDGenerator = new DefaultIDGenerator();
-
+    /**
+     * Default ID generator for messages - replace it with your own implementation
+     */
+    static idGenerator = new DefaultIDGenerator()
 
     /**
      * The unique identifier of the message
      */
-    id = Message.DEFAULT_ID_GENERATOR.nextId();
+    id = 0;
 
     /**
      * The content type of the message
@@ -100,5 +102,49 @@ export class Message {
      */
     ttl = Message.DEFAULT_TTL;
 
+    /**
+     * Delegates the generation of a new message ID to the installed ID generator
+     * @returns the next unique identifier
+     */
+    static nextId() {
+        return this.idGenerator.nextId();
+    }
+
+    /**
+     * Creates a new message, initializing it with the given properties
+     * @param props the properties to initialize the message with. Please note that you can
+     *              use the `payloadAsString`, `payloadAsJSON`, or `payload` properties to
+     *              initialize the message payload.
+     * @returns a new message
+     */
+    constructor(props: Partial<Omit<Message, 'payload'> & (
+        { payloadAsString: string } |
+        { payloadAsJSON: string } |
+        { payload: Uint8Array } )> = {}
+    ) {
+        if (!props.id) {
+            props.id = Message.nextId();
+        }
+        Object.assign(this, props);
+    }
+    
+    get payloadAsString(): string {
+        return Message.textDecoder.decode(this.payload);
+    }
+    
+    set payloadAsString(value: string) {
+        this.payload = Message.textEncoder.encode(value);
+    }
+    
+    get payloadAsJSON(): any {
+        return JSON.parse(this.payloadAsString);
+    }
+
+    set payloadAsJSON(value: any) {
+        this.payloadAsString = JSON.stringify(value);
+    }
+
+    private static textEncoder = new TextEncoder();
+    private static textDecoder = new TextDecoder();
 
 }

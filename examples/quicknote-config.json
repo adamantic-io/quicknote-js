@@ -1,19 +1,28 @@
 {
   "quicknote": {
     "senders": {
-      "testsender": {
+      "amqptestsender": {
         "connector": "${QUICKNOTE_SENDERS_TESTSENDER_CONNECTOR}",
         "type": "${QUICKNOTE_SENDERS_TESTSENDER_TYPE}",
         "dest": "${QUICKNOTE_SENDERS_TESTSENDER_DEST}",
         "durable": "${QUICKNOTE_SENDERS_TESTSENDER_DURABLE}"
+      },
+      "wsstomptestsender": {
+        "connector": "wsstomptest",
+        "dest": "/topic/quicknote"
       }
+
     },
     "receivers": {
-      "testreceiver": {
+      "amqptestreceiver": {
         "connector": "${QUICKNOTE_RECEIVERS_TESTRECEIVER_CONNECTOR}",
         "type": "${QUICKNOTE_RECEIVERS_TESTRECEIVER_TYPE}",
         "dest": "${QUICKNOTE_RECEIVERS_TESTRECEIVER_DEST}",
         "durable": "${QUICKNOTE_RECEIVERS_TESTRECEIVER_DURABLE}"
+      },
+      "wsstomptestreceiver": {
+        "connector": "wsstomptest",
+        "dest": "/topic/quicknote"
       }
     },
     "connectors": {
@@ -21,6 +30,13 @@
         "class": "io.adamantic.quicknote.amqp.AmqpConnector",
         "url": "${QUICKNOTE_CONNECTORS_AMQP_URL}",
         "enabled": true
+      },
+      "wsstomptest": {
+        "module": "@adamantic/quicknote-wsstomp",
+        "type": "wsstomp",
+        "url": "ws://127.0.0.1:15674/ws",
+        "username": "guest",
+        "password": "guest"
       }
     }
   }
