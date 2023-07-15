@@ -139,9 +139,38 @@ export interface Connector extends Channel {
 }
 
 
+/**
+ * Central registry of connector plugin factories.
+ */
+ const REGISTERED_PLUGINS: {[name: string]: (name: string, cfg: QuicknoteConfig) => Promise<Connector>} = {};
+
+/**
+ * Registers a new connector plugin through its factory function
+ * @param type the type of the connector
+ * @param factory the 
+ */
+export function registerConnectorPlugin(type: string, factory: (name: string, cfg: QuicknoteConfig) => Promise<Connector>) {
+    REGISTERED_PLUGINS[type] = factory;
+    log.info('Registered connector plugin for type: ' + type);
+}
+
+/**
+ * Loads a connector by name. The connector configuration is fetched, and the `type` property is used
+ * if a registered plugin factory is available. Otherwise, the `module` property is used to dynamically
+ * import the module and instantiate the connector. If no `module` property is available, the connector
+ * name is used as the module name.
+ * @param name The name of the connector to load
+ * @returns a promise that resolves to the connector instance
+ */
 export async function loadConnector(name: string): Promise<Connector> {
     log.info(`Loading connector ${name}`);
     const cfg = QuicknoteConfig.instance().configForConnector(name);
+    const connType = cfg['type'];
+    if (connType && REGISTERED_PLUGINS[cfg['type']]) {
+        log.info(`Instantiating connector [${name}] of type [${connType}] through registered factory`);
+        return REGISTERED_PLUGINS[cfg['type']](name, QuicknoteConfig.instance());
+    }
+    log.debug(`No registered factory for connector [${name}], trying module dynamic import`);
     const moduleName = moduleNameForConnector(name, cfg);
     // check if module is available
     const module = await import(moduleName);

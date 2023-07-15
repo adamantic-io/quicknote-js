@@ -9,11 +9,11 @@
 import {ConfigException, NotImplemented} from "./exceptions";
 
 export { QuicknoteConfig } from "./config";
-export { ChannelState, Channel, Sender, Receiver, Connector } from "./channel";
+export { ChannelState, Channel, Sender, Receiver, Connector, registerConnectorPlugin } from "./channel";
 export { Message, IDGenerator, DefaultIDGenerator } from "./message";
 
 import { v4 as uuidV4 } from "uuid";
-import {Connector, loadConnector, Receiver, Sender} from "./channel";
+import {Connector, loadConnector, Receiver, registerConnectorPlugin, Sender} from "./channel";
 import logger from "./logging";
 import {QuicknoteConfig} from "./config";
 
@@ -55,6 +55,10 @@ export class Quicknote {
             this._connectors[name] = cnn;
         }
         return cnn;
+    }
+
+    registerConnectorPlugin(name: string, factory: (name: string, cfg: QuicknoteConfig) => Promise<Connector>) {
+        registerConnectorPlugin(name, factory);
     }
 
     get clientId(): string {

@@ -7,11 +7,11 @@ import {Client as StompClient, Message as StompMessage, StompSubscription} from 
 
 const log = logger('quicknote-wsstomp');
 
-try {
-    const WebSocket = require('ws');
-    global.WebSocket = WebSocket;
-} catch (e) {
-    log.info("ws not available - we're possibly in the browser");
+if (typeof window !== 'undefined' && typeof window.document !== 'undefined') {
+    log.info("Running in browser context, not importing ws.");
+} else {
+    log.info("Not in browser (probably nodejs), importing ws.");
+    global.WebSocket = require('ws');
 }
 
 
@@ -21,6 +21,8 @@ export async function connector(name: string, cfg: QuicknoteConfig): Promise<Con
     await cnn.initialize(cfg);
     return cnn;
 }
+
+export default connector;
 
 class WsstompConnector implements Connector {
 
@@ -262,7 +264,7 @@ class WsStompReceiver extends WsStompBaseChannel implements Receiver {
                 log.trace(`Received message on WS-STOMP receiver [${this.name()}]`, message);
             }
             if (observer.next) { // pushing to observer via event loop
-                setImmediate(() => observer.next!(this.stompToQuicknoteMessage(message, { routing })));
+                setTimeout(() => observer.next!(this.stompToQuicknoteMessage(message, { routing })), 0);
             }
         });
         log.info(`Subscribed to [${destination}] on WS-STOMP receiver [${this.name()}] with id [${sub.id}]`);
