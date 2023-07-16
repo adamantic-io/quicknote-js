@@ -84,8 +84,7 @@ class WsstompConnector implements Connector {
             log.info(`WS-STOMP connector [${this.name()}] connected.`);
             // this also occurs when reconnecting, so we have to close all senders and receivers
             // and re-open them.
-            await this.closeAllSendersAndReceivers();
-            // TODO: handle reopening of senders and receivers
+            await this.recoverSubscriptionsAfterReconnect();
             this.state$.next(ChannelState.OPEN);
         }
         this.stompClient.onDisconnect = (frame) => {
@@ -147,6 +146,21 @@ class WsstompConnector implements Connector {
             log.error(`Error closing all senders and receivers`, err);
         }
     }
+
+    protected async recoverSubscriptionsAfterReconnect() {
+        try {
+            log.info(`Connector [${this.name()}] recovering subscriptions after reconnect.`);
+            const promises: Promise<any>[] = [];
+
+            for (let key in this.receivers) {
+                promises.push(this.receivers[key].recoverAfterReconnect());
+            }
+            await Promise.all(promises);
+        } catch (err) {
+            log.error(`Error recovering subscriptions`, err);
+        }
+    }
+
     async sender(name: string): Promise<Sender> {
         if (this.senders[name]) {
             if (this.senders[name].state$.value === ChannelState.OPEN) {
@@ -160,6 +174,7 @@ class WsstompConnector implements Connector {
         this.senders[name] = send;
         return send;
     }
+
     name(): string {
         return this.name_;
     }
@@ -179,8 +194,8 @@ class WsstompConnector implements Connector {
     private _ws: any;
     private _lastError?: any;
     private properties: {[key: string]: any } = {};
-    private senders: { [key: string]: Sender } = {};
-    private receivers: { [key: string]: Receiver } = {};
+    private senders: { [key: string]: WsStompSender } = {};
+    private receivers: { [key: string]: WsStompReceiver } = {};
 
 }
 
@@ -203,8 +218,14 @@ abstract class WsStompBaseChannel implements Channel {
         return this._name;
     }
 
+    /**
+     * Recover subscriptions after a disconnect / reconnect.
+     */
+    async recoverAfterReconnect() { }
+
     abstract open(): Promise<void>;
     abstract close(): Promise<void>;
+
 
     protected abstract locateOwnConfig(): any;
 
@@ -248,9 +269,19 @@ class WsStompSender extends WsStompBaseChannel implements Sender {
     }
 }
 
-class WsStompReceiver extends WsStompBaseChannel implements Receiver {
 
-    private stompSubs: StompSubscription[] = [];
+class SubscriptionDescriptor {
+    constructor(
+        public destination: string,
+        public sub: StompSubscription | null,
+        public observer: Partial<Observer<Message>>,
+        public routing?: string,
+    ) { }
+
+}
+
+class WsStompReceiver extends WsStompBaseChannel implements Receiver {
+    private stompSubs: SubscriptionDescriptor[] = [];
 
     protected locateOwnConfig(): any {
         return this._config.configForReceiver(this.name());
@@ -258,20 +289,35 @@ class WsStompReceiver extends WsStompBaseChannel implements Receiver {
 
     subscribe(observer: Partial<Observer<Message>>, routing?: string): Unsubscribable {
         const destination = routing ? this._destination + routing : this._destination;
+        const desc = new SubscriptionDescriptor(destination, null, observer, routing);
+        this.attachSubscription(desc);
+        this.stompSubs.push(desc);
+        return desc.sub!;
+    }
+
+    async recoverAfterReconnect() {
+        for (let desc of this.stompSubs) {
+            log.info(`Recovering subscription to [${desc.destination}] on WS-STOMP receiver [${this.name()}]`);
+            if (desc.sub) {
+                try { await desc.sub.unsubscribe(); } catch (err) { log.error(`Error unsubscribing from [${desc.destination}]`, err); }
+            }
+            this.attachSubscription(desc);
+        }
+    }
+
+    attachSubscription(desc: SubscriptionDescriptor) {
         const sub = this._stompClient.subscribe(this._destination, (message: StompMessage) => {
 
             if (log.isLevelEnabled(LogLevel.TRACE)) {
                 log.trace(`Received message on WS-STOMP receiver [${this.name()}]`, message);
             }
-            if (observer.next) { // pushing to observer via event loop
-                setTimeout(() => observer.next!(this.stompToQuicknoteMessage(message, { routing })), 0);
+            if (desc.observer.next) { // pushing to observer via event loop
+                setTimeout(() => desc.observer.next!(this.stompToQuicknoteMessage(message, { routing: desc.routing })), 0);
             }
         });
-        log.info(`Subscribed to [${destination}] on WS-STOMP receiver [${this.name()}] with id [${sub.id}]`);
-        this.stompSubs.push(sub);
-        return sub;
+        desc.sub = sub;
+        log.info(`Subscribed to [${desc.destination}] on WS-STOMP receiver [${this.name()}] with id [${sub.id}]`);
     }
-
 
     stompToQuicknoteMessage(message: StompMessage, additionalProps: object = {}): Message {
         const strid = message.headers['amqp-message-id'] || message.headers['message_id']
@@ -311,11 +357,16 @@ class WsStompReceiver extends WsStompBaseChannel implements Receiver {
     }
     async close(): Promise<void> {
         log.debug("Closing all subscriptions on WS-STOMP receiver [${this.name()}]");
-        for (let sub of this.stompSubs) {
-            log.debug(`Unsubscribing from [${sub.id}] on WS-STOMP receiver [${this.name()}]`);
-            try { sub.unsubscribe(); }
-            catch (err) {
-                log.warn(`Error unsubscribing from [${sub.id}] on WS-STOMP receiver [${this.name()}]`, err);
+        for (let desc of this.stompSubs) {
+            if (desc.sub) {
+                log.debug(`Unsubscribing from [${desc.sub.id}] on WS-STOMP receiver [${this.name()}]`);
+                try { desc.sub.unsubscribe(); }
+                catch (err) {
+                    log.warn(`Error unsubscribing from [${desc.sub.id}] on WS-STOMP receiver [${this.name()}]`, err);
+                }
+            }
+            if (desc.observer && desc.observer.complete) {
+                try { desc.observer.complete(); } catch (err) { log.error(`Error completing observer`, err); }
             }
         }
         this.stompSubs = [];
