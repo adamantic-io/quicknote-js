@@ -1,6 +1,6 @@
 {
   "name": "@adamantic/quicknote",
-  "version": "0.0.3",
+  "version": "0.0.6",
   "description": "Quicknote library implementation for Typescript and Javascript",
   "keywords": [
     "notification",
