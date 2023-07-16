@@ -58,7 +58,7 @@ export class Quicknote {
     }
 
     registerConnectorPlugin(name: string, factory: (name: string, cfg: QuicknoteConfig) => Promise<Connector>) {
-        registerConnectorPlugin(name, factory);
+        return registerConnectorPlugin(name, factory);
     }
 
     get clientId(): string {

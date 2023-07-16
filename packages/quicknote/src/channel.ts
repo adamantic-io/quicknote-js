@@ -11,6 +11,7 @@ import {Message} from "./message";
 import {BehaviorSubject, Observer, Subscribable, Unsubscribable} from "rxjs";
 import {QuicknoteConfig} from "./config";
 import log from "loglevel";
+import { ConfigException } from "./exceptions";
 
 /**
  * Simple representation of the state of a channel
@@ -156,9 +157,8 @@ export function registerConnectorPlugin(type: string, factory: (name: string, cf
 
 /**
  * Loads a connector by name. The connector configuration is fetched, and the `type` property is used
- * if a registered plugin factory is available. Otherwise, the `module` property is used to dynamically
- * import the module and instantiate the connector. If no `module` property is available, the connector
- * name is used as the module name.
+ * if a registered plugin factory is available. Otherwise, the name is used as a direct match for the
+ * registered plugin factory.
  * @param name The name of the connector to load
  * @returns a promise that resolves to the connector instance
  */
@@ -170,24 +170,10 @@ export async function loadConnector(name: string): Promise<Connector> {
         log.info(`Instantiating connector [${name}] of type [${connType}] through registered factory`);
         return REGISTERED_PLUGINS[cfg['type']](name, QuicknoteConfig.instance());
     }
-    log.debug(`No registered factory for connector [${name}], trying module dynamic import`);
-    const moduleName = moduleNameForConnector(name, cfg);
-    // check if module is available
-    const module = await import(moduleName);
-    return module.connector(name, QuicknoteConfig.instance());
-}
-
-const moduleNameForConnector = (name: string, cfg: any): string => {
-    let moduleName = cfg['module'];
-    if (!moduleName) {
-        log.debug(`No 'module' specified for connector [${name}], trying 'type'`);
-        let connType = cfg['type'];
-        if (!connType) {
-            log.debug(`No 'type' specified for connector [${name}], using default`);
-            connType = name;
-        }
-        moduleName = '@adamantic/quicknote-' + connType;
-        log.info(`Deduced module name for connector [${name}]: ${moduleName}`);
+    if (REGISTERED_PLUGINS[name]) {
+        log.info(`Instantiating connector [${name}] through registered factory - direct name match`);
+        return REGISTERED_PLUGINS[name](name, QuicknoteConfig.instance());
     }
-    return moduleName;
+    else throw new ConfigException(`No registered factory for connector [${name}] - use 'registerConnectorPlugin' to register a factory`);
+    // TODO: find a webpack-friendly way to load plugins through dynamic module import
 }

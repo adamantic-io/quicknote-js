@@ -1,6 +1,9 @@
 import {Quicknote} from "@adamantic/quicknote";
+import qnAmqp from "../src/quicknote-amqp";
 
 describe('Quicknote AMQP', () => {
+    Quicknote.instance().registerConnectorPlugin('amqp', qnAmqp);
+
     test('No-op', () => {
         expect(true).toBe(true);
     });

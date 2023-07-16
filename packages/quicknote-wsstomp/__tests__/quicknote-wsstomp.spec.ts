@@ -1,9 +1,12 @@
 import logger from "@adamantic/quicknote/lib/logging";
 import quicknote, {Message, Quicknote} from "@adamantic/quicknote";
+import qnWsStomp from "../src/quicknote-wsstomp";
 
 const log = logger('quicknote-wsstomp.spec');
 
 describe('quicknote-wsstomp',  () => {
+    Quicknote.instance().registerConnectorPlugin('wsstomp', qnWsStomp);
+
     test('should be able to instantiate a quicknote-wsstomp connector', async () => {
         // @ts-ignore
         const cfgFile = await import('./wsstomp-sample-config.json');
