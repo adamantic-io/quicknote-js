@@ -3,7 +3,7 @@
 import {Channel, ChannelState, Connector, Message, QuicknoteConfig, Receiver, Sender} from '@adamantic/quicknote';
 import logger, {LogLevel} from "@adamantic/quicknote/lib/logging";
 import {BehaviorSubject, Observer, Unsubscribable} from "rxjs";
-import {Client as StompClient, Message as StompMessage, StompSubscription} from "@stomp/stompjs";
+import {Client as StompClient, Message as StompMessage, StompHeaders, StompSubscription} from "@stomp/stompjs";
 
 const log = logger('quicknote-wsstomp');
 
@@ -40,6 +40,7 @@ class WsstompConnector implements Connector {
             url: this.getOrFail('url', myCfg),
             username: myCfg['username'] || '',
             password: myCfg['password'] || '',
+            authorizationHeader: myCfg['authorizationHeader'] || '',
             reconnectDelay: parseInt(myCfg['reconnectDelay'] || '5000'),
             heartbeatIncoming: parseInt(myCfg['heartbeatIncoming'] || '0'),
         }
@@ -68,12 +69,10 @@ class WsstompConnector implements Connector {
             return;
         }
         log.info(`Opening WS-STOMP connector [${this.name()}]`);
+        const connectHeaders = this.computeConnectHeaders();
         this.stompClient = new StompClient({
             brokerURL: this.properties.url,
-            connectHeaders: {
-                login: this.properties.username,
-                passcode: this.properties.password,
-            },
+            connectHeaders,
             debug: (str) => {
                 log.debug(str);
             },
@@ -127,6 +126,16 @@ class WsstompConnector implements Connector {
         return recv;
     }
 
+    protected computeConnectHeaders(): {[key: string]: string} {
+        const headers = {};
+        if (this.properties.authorizationHeader) {
+            headers['Authorization'] = this.properties.authorizationHeader;
+        } else if (this.properties.username) {
+            headers['login'] = this.properties.username;
+            headers['passcode'] = this.properties.password;
+        }
+        return headers;
+    }
     protected async closeAllSendersAndReceivers() {
         // await in a promise.all
         try {

@@ -1,6 +1,6 @@
 {
   "name": "@adamantic/quicknote-wsstomp",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "STOMP-over-Websocket connector for the Quicknote library",
   "keywords": [
     "quicknote",
