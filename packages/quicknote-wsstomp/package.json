@@ -1,6 +1,6 @@
 {
   "name": "@adamantic/quicknote-wsstomp",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "description": "STOMP-over-Websocket connector for the Quicknote library",
   "keywords": [
     "quicknote",
@@ -28,7 +28,7 @@
     "test": "ts-node __tests__/quicknote-wsstomp.spec.ts"
   },
   "dependencies": {
-    "@adamantic/quicknote": "^0.0.6",
+    "@adamantic/quicknote": "^0.0.8",
     "@stomp/stompjs": "^7.0.0"
   },
   "optionalDependencies": {

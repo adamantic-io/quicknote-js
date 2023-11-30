@@ -3,17 +3,17 @@ module.exports = {
     preset: 'ts-jest', testEnvironment: 'node', verbose: true, projects: [{
         preset: 'ts-jest',
         testEnvironment: 'node',
-        displayName: 'quicknode',
+        displayName: 'quicknote',
         testMatch: ['<rootDir>/packages/quicknote/__tests__/**/*.spec.ts']
     }, {
         preset: 'ts-jest',
         testEnvironment: 'node',
-        displayName: 'quicknode-amqp',
+        displayName: 'quicknote-amqp',
         testMatch: ['<rootDir>/packages/quicknote-amqp/__tests__/**/*.spec.ts']
     }, {
         preset: 'ts-jest',
         testEnvironment: 'node',
-        displayName: 'quicknode-wsstomp',
+        displayName: 'quicknote-wsstomp',
         testMatch: ['<rootDir>/packages/quicknote-wsstomp/__tests__/**/*.spec.ts']
     }]
 };

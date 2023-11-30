@@ -13,6 +13,7 @@ export { ChannelState, Channel, Sender, Receiver, Connector, registerConnectorPl
 export { Message, IDGenerator, DefaultIDGenerator } from "./message";
 
 import { v4 as uuidV4 } from "uuid";
+import equal from "deep-equal";
 import {Connector, loadConnector, Receiver, registerConnectorPlugin, Sender} from "./channel";
 import logger from "./logging";
 import {QuicknoteConfig} from "./config";
@@ -31,7 +32,17 @@ export class Quicknote {
     }
 
     config(config: object, vars: {[key:string]:string} = {}, reload = false): QuicknoteConfig {
-        this._cfg = QuicknoteConfig.init(config, vars, reload);
+        const newCfg = QuicknoteConfig.init(config, vars, reload);
+        if (this._cfg && reload && !equal(this._cfg, newCfg)) {
+            this._log.warn('Quicknote configuration changed, closing all connectors.');
+            for (const cnn of Object.values(this._connectors)) {
+                cnn.close().catch((e) => {
+                    this._log.error(`Error while closing connector ${cnn.name()}.`, e);
+                });
+            }
+            this._connectors = {};
+        }
+        this._cfg = newCfg;
         return this._cfg;
     }
 

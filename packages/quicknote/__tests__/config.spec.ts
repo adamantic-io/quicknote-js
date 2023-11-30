@@ -1,3 +1,4 @@
+// @ts-ignore
 import {QuicknoteConfig, VariableInterpolator} from "../src/config";
 
 describe('VariableInterpolator', () => {
