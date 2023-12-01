@@ -2,6 +2,7 @@ import logger from "@adamantic/quicknote/lib/logging";
 import quicknote, {ChannelState, Message, Quicknote} from "@adamantic/quicknote";
 // @ts-ignore
 import qnWsStomp from "../src/quicknote-wsstomp";
+import {waitForState} from "@adamantic/quicknote/lib/channel";
 
 const log = logger('quicknote-wsstomp.spec');
 
@@ -19,8 +20,8 @@ describe('quicknote-wsstomp',  () => {
         try {
             expect(cnn).toBeDefined();
         } finally {
-            await cnn.close();
             await qn.close();
+            await waitForState(cnn, ChannelState.CLOSED);
         }
     });
 
@@ -33,8 +34,8 @@ describe('quicknote-wsstomp',  () => {
         try {
             expect(sender).toBeDefined();
         } finally {
-            await sender.close();
             await qn.close();
+            await waitForState(sender, ChannelState.CLOSED);
         }
     });
 
@@ -47,8 +48,8 @@ describe('quicknote-wsstomp',  () => {
         try {
             expect(receiver).toBeDefined();
         } finally {
-            await receiver.close();
             await qn.close();
+            await waitForState(receiver, ChannelState.CLOSED);
         }
     });
 
@@ -89,6 +90,8 @@ describe('quicknote-wsstomp',  () => {
                 await p;
             } finally {
                 await quicknote().close();
+                await waitForState(sender, ChannelState.CLOSED);
+                await waitForState(receiver, ChannelState.CLOSED);
             }
     });
 
@@ -122,5 +125,9 @@ describe('quicknote-wsstomp',  () => {
         expect(receiver2.state$.value).toBe(ChannelState.OPEN);
         expect(sender2.state$.value).toBe(ChannelState.OPEN);
         await quicknote().close();
+        await waitForState(sender, ChannelState.CLOSED);
+        await waitForState(receiver, ChannelState.CLOSED);
+        await waitForState(sender2, ChannelState.CLOSED);
+        await waitForState(receiver2, ChannelState.CLOSED);
     });
 });

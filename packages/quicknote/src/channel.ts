@@ -68,6 +68,32 @@ export interface Channel {
     state$: BehaviorSubject<ChannelState>;
 }
 
+/**
+ * Waits for a channel to reach a specific state.
+ * @param channel the channel to wait for
+ * @param state the state to wait for
+ * @param timeoutMs the timeout in milliseconds, defaults to 30000 (30 seconds)
+ */
+export async function waitForState(channel: Channel, state: ChannelState, timeoutMs: number = 30000): Promise<void> {
+    const p = new Promise<void> ( (resolve, reject) => {
+        if (channel.state$.value === state) {
+            resolve();
+            return;
+        }
+        const sub = channel.state$.subscribe((s) => {
+            if (s === state) {
+                resolve();
+                sub.unsubscribe();
+            }
+        });
+        setTimeout(() => {
+            reject(`Timeout waiting for state ${ChannelState[state]}`);
+            sub.unsubscribe();
+        }, timeoutMs);
+    });
+    return p;
+}
+
 
 /**
  * Represents a channel to send messages to a remote destination.
