@@ -1,12 +1,26 @@
 import logger from "@adamantic/quicknote/lib/logging";
-import quicknote, {ChannelState, Message, Quicknote} from "@adamantic/quicknote";
+import quicknote, {ChannelState, Message, Quicknote, Receiver} from "@adamantic/quicknote";
 // @ts-ignore
 import qnWsStomp from "../src/quicknote-wsstomp";
 import {waitForState} from "@adamantic/quicknote/lib/channel";
+import {Subscription} from "rxjs";
 
 const log = logger('quicknote-wsstomp.spec');
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+const receiveMessage = (receiver: Receiver, timeoutMs: number) => new Promise<Message> ( (resolve, reject) => {
+    const sub = receiver.subscribe({ next: (msg: Message) => {
+            log.info('Received message', msg);
+            resolve(msg);
+            sub.unsubscribe();
+        }});
+    setTimeout(() => {
+        reject(new Error('Timed out while waiting for message'));
+        sub.unsubscribe();
+    }, timeoutMs);
+});
+
+
 
 describe('quicknote-wsstomp',  () => {
     Quicknote.instance().registerConnectorPlugin('wsstomp', qnWsStomp);
@@ -60,20 +74,8 @@ describe('quicknote-wsstomp',  () => {
             const cfg = qn.config(cfgFile);
             const sender = await qn.sender('wsstomptestsender');
             const receiver = await qn.receiver('wsstomptestreceiver');
-            try {
-
-                await sleep(1000);
-                const p = new Promise<void> ( (resolve, reject) => {
-                    // @ts-ignore
-                    receiver.subscribe({ next: (msg: Message) => {
-                        log.info('Received message', msg);
-                        resolve();
-                    }});
-                    setTimeout(reject, 5000);
-                });
-
-
-                const msg = await sender.send(
+            const sendTimer = setInterval(async () => {
+                await (await qn.sender('wsstomptestsender')).send(
                     new Message(
                         {
                             payloadAsString: 'hello world',
@@ -85,13 +87,14 @@ describe('quicknote-wsstomp',  () => {
                                 'my-header': 'my-value'
                             }
                         }));
+            }, 2000);
 
-                // expect that p resolves
-                await p;
+            try {
+                await waitForState(receiver, ChannelState.OPEN, 3000);
+                await receiveMessage(receiver, 3000);
             } finally {
+                clearInterval(sendTimer);
                 await quicknote().close();
-                await waitForState(sender, ChannelState.CLOSED);
-                await waitForState(receiver, ChannelState.CLOSED);
             }
     });
 
@@ -107,14 +110,15 @@ describe('quicknote-wsstomp',  () => {
         receiver.state$.subscribe((state) => {
             log.info('Receiver state changed: ', ChannelState[state]);
         });
-        await sleep(1000);
+        await waitForState(receiver, ChannelState.OPEN, 5000);
 
         qn.config(configFile2, undefined, true);
+        await waitForState(receiver, ChannelState.CLOSED, 5000);
+
         const cnn2 = await qn.connector('wsstomptest');
         const sender2 = await qn.sender('wsstomptestsender');
         const receiver2 = await qn.receiver('wsstomptestreceiver');
 
-        await sleep(1000);
 
         expect(cnn1).not.toBe(cnn2);
         expect(sender).not.toBe(sender2);
@@ -130,4 +134,55 @@ describe('quicknote-wsstomp',  () => {
         await waitForState(sender2, ChannelState.CLOSED);
         await waitForState(receiver2, ChannelState.CLOSED);
     });
+
+    test("Should behave consistently across reconfigures", async () => {
+        const configFile1 = await import('./wsstomp-sample-config.json');
+        const configFile2 = await import('./wsstomp-sample-config-c.json');
+        const qn = Quicknote.instance();
+        qn.config(configFile1);
+        const sendTimer = setInterval(async () => {
+            await (await qn.sender('wsstomptestsender')).send(
+                new Message(
+                    {
+                        payloadAsString: 'hello world',
+                        contentType: 'text/plain',
+                        routing: '',
+                        ttl: 1000,
+                        id: 1,
+                        headers: {
+                            'my-header': 'my-value'
+                        }
+                    }));
+        }, 2000);
+        try {
+            const holder = {
+                receiverSub: null as Subscription | null,
+                closeDetector: async (state: ChannelState) => {
+                    log.info('Receiver state changed: ', ChannelState[state]);
+                    if (state === ChannelState.CLOSED) {
+                        log.info("Detected closed receiver, resubscribing");
+                        holder.receiverSub?.unsubscribe();
+                        holder.receiverSub = (await qn.receiver('wsstomptestreceiver'))
+                            .state$.subscribe(holder.closeDetector);
+                    }
+                }
+            }
+            let receiver = await qn.receiver('wsstomptestreceiver');
+            holder.receiverSub = receiver.state$.subscribe(holder.closeDetector);
+
+            await waitForState(receiver, ChannelState.OPEN);
+            await receiveMessage(receiver,10000);
+
+            qn.config(configFile2, undefined, true);
+            receiver = await qn.receiver('wsstomptestreceiver');
+            await waitForState(receiver, ChannelState.OPEN, 5000);
+
+            await receiveMessage(receiver, 10000);
+
+        } finally {
+            clearInterval(sendTimer);
+            await quicknote().close();
+        }
+    });
+
 });
